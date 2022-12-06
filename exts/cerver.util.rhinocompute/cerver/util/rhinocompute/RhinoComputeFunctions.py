@@ -11,6 +11,7 @@ import omni.ext
 import omni.ui as ui
 from pxr import Usd, UsdGeom
 import omni.usd
+import os
 
 import json
 import time
@@ -136,9 +137,8 @@ class GrasshopperFunctions:
 
     def randomDiamonds(self,uCt,vCt,rrA,rrB):
         compute_rhino3d.Util.url = self.computeUrl
-
-        ghFile = "/gh/randomDiamonds.ghx"
-     
+        
+        ghFile = os.path.dirname(os.path.dirname(__file__)) + "/rhinocompute/gh/randomDiamonds.ghx"
         selectedMeshes = convertSelectedUsdMeshToRhino()
         inputMesh = selectedMeshes[0]["Mesh"]
         
@@ -167,7 +167,7 @@ class GrasshopperFunctions:
         
         
         # decode results
- 
+        
         data = results['values'][0]['InnerTree']['{0}']
         outMeshes = [rhino3dm.CommonObject.Decode(json.loads(item['data'])) for item in data]
   
