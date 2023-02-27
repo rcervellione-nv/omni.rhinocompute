@@ -14,7 +14,7 @@ import omni.ext
 import omni.ui as ui
 from pxr import Usd, UsdGeom, Gf
 import omni.usd
-
+import asyncio
 
 
 def convertSelectedUsdMeshToRhino():
@@ -136,3 +136,105 @@ def SaveSelectedAs3dm(self,path):
     selectedMeshes = convertSelectedUsdMeshToRhino()
     meshobj = [d['Mesh'] for d in selectedMeshes]
     SaveRhinoFile(meshobj, path)
+
+def SaveAllas3DM(self, path):
+    #get the stage
+    stage = omni.usd.get_context().get_stage()
+    #get all prims that are meshes
+    meshPrims = [stage.GetPrimAtPath(prim.GetPath()) for prim in stage.Traverse() if UsdGeom.Mesh(prim)]
+    #make a rhino file
+    rhinoFile = rhino3dm.File3dm()
+    uniqLayers = {}
+    #figure out how many elements there are (to implament progress bar in future)
+    numPrims = len(meshPrims)
+    curPrim = 0
+
+    #loop over all the meshes
+    for mp in meshPrims:
+        #convert from usd mesh to rhino mesh
+        rhinoMesh = UsdMeshToRhinoMesh(mp)
+        objName = mp.GetName()
+        rhinoAttr = rhino3dm.ObjectAttributes()
+        
+
+        dataOnParent = False        
+        #get the properties on the prim 
+        bimProps = None
+        parentPrim = mp.GetParent()
+        #see if this prim has BIM properties (from revit)
+        if parentPrim:
+            bimProps = mp.GetPropertiesInNamespace("BIM")
+            dataOnParent = False  
+        #see if this prims parent has BIM properties (from revit)
+        if not bimProps:
+            bimProps = parentPrim.GetPropertiesInNamespace("BIM")
+            dataOnParent = True  
+        #if no bim properties just add regular ones
+        if not bimProps :
+            bimProps = mp.GetProperties()
+            dataOnParent = False  
+
+        for p in bimProps:
+                try:
+                    pName = p.GetBaseName()
+                    var = p.Get()
+                    rhinoAttr.SetUserString(pName, str(var))
+                except Exception :
+                    pass
+
+        # get the prims path and use that to create nested layers in rhino
+        primpath = str(mp.GetPath())
+        sepPrimPath = primpath.split('/')
+        sepPrimPath.pop(0)
+        sepPrimPath.pop()
+        # this will ajust the layer structure if the data is from the revit connector 
+        # or if you just want to prune the last group in the export dialogue 
+        if dataOnParent or self.excludeLastGroupAsLayer:
+            sepPrimPath.pop()
+        nestedLayerName = '::'.join(sepPrimPath)
+        ct=0
+
+        curLayer = ""
+        #loop over all the prim paths to created the nested layers in rhino
+        for pp in sepPrimPath:
+            
+            if ct == 0:
+                curLayer += pp
+            else:
+                curLayer += f"::{pp}"
+            
+            #check if the layer exists, if not make it
+            if not curLayer in uniqLayers :
+                layer = rhino3dm.Layer()
+ 
+                if ct>0:
+                    prevLayer = curLayer.split('::')
+                    prevLayer.pop()
+                    prevLayer = '::'.join(prevLayer)
+                    layer.ParentLayerId = rhinoFile.Layers.FindIndex(uniqLayers[prevLayer]).Id
+                layer.Color = (255,255,255,255)
+                layer.Name = pp
+                idx = rhinoFile.Layers.Add(layer)
+                uniqLayers[curLayer]= int(idx)
+            ct+=1
+        
+        rhinoAttr.Name = objName
+        #print(str(uniqLayers[nestedLayerName]))
+        rhinoAttr.LayerIndex = int(str(uniqLayers[nestedLayerName]))
+        
+        #add the mesh and its attributes to teh rhino file
+        rhinoFile.Objects.AddMesh(rhinoMesh, rhinoAttr)
+
+        curPrim += 1
+        self.progressbarprog = curPrim/numPrims
+
+    #save it all
+    rhinoFile.Write(path)
+    print("completed saving")
+
+
+
+
+
+
+

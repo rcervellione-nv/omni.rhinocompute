@@ -21,6 +21,11 @@ class MyExtension(omni.ext.IExt):
     # this extension is located on filesystem.
     def __init__(self): 
         self.computeUrl="http://localhost:6500/"
+        self.progressbarprog = 0
+        self.progbarwindow = None
+        self.excludeLastGroupAsLayer = False
+
+  
 
     def on_startup(self, ext_id):
         #print("[omni.RhinoCompute] MyExtension startup")
@@ -31,6 +36,7 @@ class MyExtension(omni.ext.IExt):
                 with ui.CollapsableFrame("Util Functions", height = 0):
                     with ui.VStack():
                         ui.Button("save sel as 3dm", clicked_fn=lambda: SaveSelectedAs3dm(self,"S:/test.3dm"), height=40)
+                        ui.Button("save all as 3dm", clicked_fn=lambda: RhinoFunctions.SaveAllAs3DM_UI(self), height=40)
                 with ui.CollapsableFrame("Mesh Functions", height = 0):
                     with ui.VStack():
                         ui.Button("Volume", clicked_fn=lambda: RhinoFunctions.MeshVolume(self), height=40)

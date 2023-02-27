@@ -11,6 +11,8 @@ import omni.ext
 import omni.ui as ui
 from pxr import Usd, UsdGeom
 import omni.usd
+import carb.events
+import omni.kit.app
 import os
 
 import json
@@ -27,7 +29,6 @@ from .RhinoComputUtil import *
 
 omni.kit.pipapi.install("plotly==5.4.0")
 import plotly.graph_objects as go
-
 
 
 
@@ -109,9 +110,6 @@ class RhinoFunctions:
                 warning(f"QuadRemesh Failed on {name}")
         
 
-        #test(rhinoMeshes[0])
-        
-        SaveRhinoFile(rhinoMeshes, "s:/quadRemesh.3dm")
  
     def MeshOffset(self)-> None:
         compute_rhino3d.Util.url = self.computeUrl
@@ -126,12 +124,32 @@ class RhinoFunctions:
             names.append(name)
             RhinoMeshToUsdMesh("/World/rhinoComputed/",name+"_offset",macf)
 
-    def MeshtoRhinoAndBack(self) -> None:
-        meshes = convertSelectedUsdMeshToRhino()
-        rhinoMeshes = []
-        for m in meshes:
-            rhinoMeshes.append(m["Mesh"])
-        RhinoMeshToUsdMesh("/World","/backFromRhino",rhinoMeshes[0])
+   
+
+    def SaveAllAs3DM_UI(self):
+        window_flags = ui.WINDOW_FLAGS_NO_SCROLLBAR
+        #window_flags |= ui.WINDOW_FLAGS_NO_TITLE_BAR
+        self.export3dmwindow = ui.Window("Export Stage As 3DM", width=300, height=130, flags=window_flags)
+        with self.export3dmwindow.frame:   
+            with ui.VStack():
+                with ui.HStack():
+                    ui.Label("Path", width=50, height = 25)
+                    path = ui.StringField( height = 25, tooltip = "Set the location and name of the file i.e c:/temp/myRhinofile.3dm")
+                with ui.HStack( height = 35):
+                    def exLastGrpAsLayCb_changed(self, val):
+                        self.excludeLastGroupAsLayer = val
+                        print(val)
+                    
+                    exLastGrpAsLayCb = ui.CheckBox(width = 30)
+                    exLastGrpAsLayCb.model.add_value_changed_fn(lambda cb: exLastGrpAsLayCb_changed(self,cb.get_value_as_bool() ) )
+                    ui.Label("Exlude last group as layer", width=50, height = 15)
+                    
+                def exportbt():
+                    SaveAllas3DM(self,path.model.get_value_as_string())
+                ui.Line()
+                ui.Button("Export", clicked_fn=lambda: exportbt(), height=25)
+
+
 
 class GrasshopperFunctions:
 
