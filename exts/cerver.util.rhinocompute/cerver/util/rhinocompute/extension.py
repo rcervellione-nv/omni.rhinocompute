@@ -25,14 +25,21 @@ class MyExtension(omni.ext.IExt):
         self.progbarwindow = None
         self.excludeLastGroupAsLayer = False
 
+
   
 
     def on_startup(self, ext_id):
         #print("[omni.RhinoCompute] MyExtension startup")
+        def serverAddrChanged(addr):
+            self.computeUrl = addr
 
         self._window = ui.Window("Rhino Compute Functions", width=300, height=400)
         with self._window.frame:
             with ui.VStack():
+                ui.Label("Compute Server Address")
+                serverAddrUi = ui.StringField(height = 30)
+                serverAddrUi.model.set_value(self.computeUrl)
+                serverAddrUi.model.add_value_changed_fn(lambda m:serverAddrChanged(m.get_value_as_string()))
                 with ui.CollapsableFrame("Util Functions", height = 0):
                     with ui.VStack():
                         ui.Button("save sel as 3dm", clicked_fn=lambda: SaveSelectedAs3dm(self,"S:/test.3dm"), height=40)

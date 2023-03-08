@@ -105,17 +105,19 @@ def RhinoMeshToUsdMesh( rootUrl, meshName, rhinoMesh: rhino3dm.Mesh , primPath=N
 	# Calculate indices for each triangle
     faceIndices = []
     faceVertexCounts = []
-    fcount=3
+    
     
     for i in range(0, rhinoMesh.Faces.Count):
+        fcount=3
         curf = rhinoMesh.Faces[i]
+
         faceIndices.append(curf[0])
         faceIndices.append(curf[1])
         faceIndices.append(curf[2])
         if curf[2] != curf[3]:
             faceIndices.append(curf[3])
             fcount=4
-        #print(fcount)
+        #print(f"{fcount} : {curf}")
         faceVertexCounts.append(fcount)
 
     mesh.CreateFaceVertexIndicesAttr(faceIndices)

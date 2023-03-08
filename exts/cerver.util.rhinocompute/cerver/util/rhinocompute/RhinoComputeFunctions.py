@@ -99,8 +99,9 @@ class RhinoFunctions:
         names = []
         rhinoMeshes = []
    
-        for m in meshes: 
-            qrm =compute_rhino3d.Mesh.QuadRemesh(m["Mesh"],parameters)
+        for m in meshes:
+            weldVerts =  compute_rhino3d.Mesh.Weld(m["Mesh"],0.5)
+            qrm =compute_rhino3d.Mesh.QuadRemesh(weldVerts,parameters)
             name = m["Name"]
             if qrm is not None:
                 rhinoMeshes.append(qrm)
@@ -109,12 +110,27 @@ class RhinoFunctions:
             else:
                 warning(f"QuadRemesh Failed on {name}")
         
+    def MeshWeld(self, tol)-> None:
+        compute_rhino3d.Util.url = self.computeUrl
+        meshes = convertSelectedUsdMeshToRhino()
 
+        names = []
+        rhinoMeshes = []
+   
+        for m in meshes:
+            weldVerts =  compute_rhino3d.Mesh.Weld(m["Mesh"],tol)
+            name = m["Name"]
+            if weldVerts is not None:
+                rhinoMeshes.append(weldVerts)
+                names.append(name)
+                RhinoMeshToUsdMesh("/World/rhinoComputed/",name+"_Weld",weldVerts)
+            else:
+                warning(f"Weld Failed on {name}")
  
     def MeshOffset(self)-> None:
         compute_rhino3d.Util.url = self.computeUrl
         meshes = convertSelectedUsdMeshToRhino()
-  
+
         names = []
         rhinoMeshes = []
         for m in meshes:
